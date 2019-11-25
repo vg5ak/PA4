@@ -8,14 +8,14 @@ digraph ASTGraph {
 2 -> 3
 4 [ label="ByteCast" ];
 3 -> 4
-5 [ label="ByteCast" ];
+5 [ label="MulExp" ];
 4 -> 5
-6 [ label="MulExp" ];
+6 [ label="ByteCast" ];
 5 -> 6
 7 [ label="IntLiteral\n0" ];
 6 -> 7
 8 [ label="ByteCast" ];
-6 -> 8
+5 -> 8
 9 [ label="IntLiteral\n0" ];
 8 -> 9
 10 [ label="ByteCast" ];

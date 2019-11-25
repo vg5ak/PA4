@@ -8,26 +8,18 @@ digraph ASTGraph {
 2 -> 3
 4 [ label="ByteCast" ];
 3 -> 4
-5 [ label="ByteCast" ];
+5 [ label="IntLiteral\n1" ];
 4 -> 5
-6 [ label="MulExp" ];
-5 -> 6
-7 [ label="IntLiteral\n1" ];
+6 [ label="ByteCast" ];
+3 -> 6
+7 [ label="IntLiteral\n2" ];
 6 -> 7
-8 [ label="ByteCast" ];
-6 -> 8
-9 [ label="IntLiteral\n2" ];
-8 -> 9
-10 [ label="ByteCast" ];
-3 -> 10
-11 [ label="ByteCast" ];
-10 -> 11
-12 [ label="PlusExp" ];
-11 -> 12
-13 [ label="IntLiteral\n3" ];
-12 -> 13
-14 [ label="IntLiteral\n4" ];
-12 -> 14
-15 [ label="ColorLiteral\nMeggy.Color.WHITE" ];
-3 -> 15
+8 [ label="ColorLiteral\nMeggy.Color.WHITE" ];
+3 -> 8
+9 [ label="MeggyToneStart" ];
+2 -> 9
+10 [ label="ToneLiteral\nMeggy.Tone.D3" ];
+9 -> 10
+11 [ label="IntLiteral\n2" ];
+9 -> 11
 }

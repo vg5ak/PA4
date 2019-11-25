@@ -1,0 +1,36 @@
+digraph ASTGraph {
+	node [shape=record];
+	graph [ rankdir="LR"];
+	scopesetP [ label="<f0> Scope setP | <f1> mDict\[c\] | <f2> mDict\[this\] | <f3> mDict\[x\] | <f4> mDict\[y\] "];
+	scopesetP:<f1> -> c:<f0>;
+	scopesetP:<f2> -> this:<f0>;
+	scopesetP:<f3> -> x:<f0>;
+	scopesetP:<f4> -> y:<f0>;
+
+	c [ label=" <f0> VarSTE | <f1> mName = c| <f2> mType = COLOR| <f3> mBase = INVALID| <f4> mOffset = 5"];
+
+	this [ label=" <f0> VarSTE | <f1> mName = this| <f2> mType = CLASS| <f3> mBase = INVALID| <f4> mOffset = 1"];
+
+	x [ label=" <f0> VarSTE | <f1> mName = x| <f2> mType = BYTE| <f3> mBase = INVALID| <f4> mOffset = 3"];
+
+	y [ label=" <f0> VarSTE | <f1> mName = y| <f2> mType = BYTE| <f3> mBase = INVALID| <f4> mOffset = 4"];
+	
+	scopeC [ label="<f0> Scope C | <f1> mDict\[setP\] "];
+	scopeC:<f1> -> setP:<f0>;
+
+	setP [ label=" <f0> MethodSTE | <f1> mName = setP| <f2> mSignature = ( BYTE x,  BYTE y,  COLOR c ) return VOID| <f3> mScope "];
+	
+	setP:<f3> -> scopesetP:<f0>;
+	scopePA4doubleDef [ label="<f0> Scope PA4doubleDef "];
+	
+	scopeProgram [ label="<f0> Scope Program | <f1> mDict\[PA4doubleDef\] | <f2> mDict\[C\] "];
+	scopeProgram:<f1> -> PA4doubleDef:<f0>;
+	scopeProgram:<f2> -> C:<f0>;
+
+	PA4doubleDef [ label=" <f0> ClassSTE | <f1> mName=PA4doubleDef| <f2> mMain=true| <f3> mSuperClass = NULL | <f4> mScope "];
+
+	C [ label=" <f0> ClassSTE | <f1> mName=C| <f2> mMain=false| <f3> mSuperClass = NULL | <f4> mScope "];
+	
+	PA4doubleDef:<f4>  -> scopePA4doubleDef: <f0>;
+	C:<f4>  -> scopeC: <f0>;
+}

@@ -37,7 +37,7 @@ JCC = javac
 JAR = jar
 #-------------------------
 
-all: $(SCANNER).jar $(PROG).jar
+all: $(SCANNER).jar $(PROG).jar 
 
 source: $(PARSE_DIR)/Yylex.java $(PARSE_DIR)/mj.java
 

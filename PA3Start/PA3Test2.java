@@ -2,6 +2,7 @@
 
 import meggy.Meggy;
 
+/*
 
 class PA3Test2 {
 
@@ -29,3 +30,11 @@ class PA3Test2 {
 
     }
 }
+*/
+
+class PA3Test2 {
+       public static void main(String[] whatever){
+           //Meggy.setPixel((byte)0, (byte)0, Meggy.Color.BLUE); 
+           Meggy.setPixel((byte)4, (byte)3, Meggy.getPixel((byte)0, (byte)0));
+       }
+   }

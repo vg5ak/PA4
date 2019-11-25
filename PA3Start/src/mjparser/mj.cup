@@ -87,25 +87,53 @@ non terminal IStatement statement;
 non terminal List<IStatement> statement_list;
 non terminal MainClass main_class;
 non terminal IStatement block_statement;
-
+non terminal IdLiteral identifier;
+non terminal List<IExp> arguments;
+non terminal IExp return;
+non terminal LinkedList<Formal> formals;
+non terminal IType type;
+non terminal MethodDecl method_declaration;
+non terminal IClassDecl class_declaration;
+non terminal LinkedList<IClassDecl> class_list;
+non terminal LinkedList<MethodDecl> method_list;
 /* Declare precedence and associativity  here */
+precedence left TIMES, LT;
 precedence left EQUAL;
 precedence left AND;
-precedence right NOT;
-precedence left ELSE;
-precedence left BYTE;
 precedence left PLUS;
 precedence left MINUS;
-precedence left TIMES;
+precedence left EQUAL;
+precedence left ELSE;
+precedence left DOT;
+//precedence left COMMENT;
+
+
+precedence right NOT;
+precedence right ELSE;
+precedence right BYTE;
 precedence right UMINUS;
+precedence right IMPORT;
+precedence right CLASS;
+precedence right LPAREN;
+precedence right RPAREN;
+
 
 
 /* Meggy Java Grammar */
 start with program;
 
 program ::=
-    IMPORT:i MEGGY SEMI main_class:m
-    {:RESULT = new Program(i.line, i.pos, m, new LinkedList<IClassDecl>());:}
+    IMPORT:i MEGGY SEMI main_class:m class_list:c
+    {:RESULT = new Program(i.line, i.pos, m, c);:}
+    ;
+type ::=
+     BOOLEAN:x {:RESULT = new BoolType(x.line, x.pos);:}
+    |BYTE:x {:RESULT = new ByteType(x.line, x.pos);:}
+    |INT:x {:RESULT = new IntType(x.line, x.pos);:}
+    |VOID:x {:RESULT = new VoidType(x.line, x.pos);:}
+    |MEGGYCOLOR:x {:RESULT = new ColorType(x.line, x.pos);:}
+    |MEGGYTONE:x {:RESULT = new ToneType(x.line, x.pos);:}
+    |MEGGYBUTTON:x {:RESULT = new ButtonType(x.line, x.pos);:}
     ;
 exp ::=
      exp:a AND:op exp:b {:RESULT = new AndExp(op.line, op.pos, a, b);:}
@@ -113,6 +141,7 @@ exp ::=
     |exp:a PLUS:op exp:b {:RESULT = new PlusExp(op.line, op.pos, a, b);:}
     |exp:a MINUS:op exp:b {:RESULT = new MinusExp(op.line, op.pos, a, b);:}
     |exp:a TIMES:op exp:b {:RESULT = new MulExp(op.line, op.pos, a, b);:}
+    |exp:a LT:op exp:b  {: RESULT = new LtExp(op.line, op.pos, a, b); :}
     | MINUS:op exp:b {: RESULT = new NegExp(op.line, op.pos, b);:}%prec UMINUS
     |MEGGYGETPIXEL LPAREN exp:a COMMA exp:b RPAREN:op
     {: RESULT = new MeggyGetPixel(op.line, op.pos, a,b);
@@ -134,10 +163,19 @@ exp ::=
     :}
     | BUTTON_LITERAL:a
     {: RESULT = new ButtonLiteral(a.line, a.pos, a.lexeme, a.value);:}
+    | TONE_LITERAL:t {: RESULT = new ToneLiteral(t.line, t.pos, t.lexeme, t.value); :}
     | TRUE:t {:RESULT = new TrueLiteral(t.line, t.pos, t.lexeme, t.value);:}
     | FALSE:t {:RESULT = new FalseLiteral(t.line, t.pos, t.lexeme, t.value);:}
     | NOT:op exp:a {: RESULT = new NotExp(op.line, op.pos, a);:}
     | LPAREN exp:a RPAREN{: RESULT = a;:}
+    | identifier:i {:RESULT = i;:}
+    | THIS:t {:RESULT = new ThisLiteral(t.line, t.pos, t.lexeme, t.value);:}
+    | NEW:n identifier:id LPAREN RPAREN {:RESULT = new NewExp(n.line, n.pos, id.getLexeme());:}
+    |exp:a DOT identifier:i LPAREN arguments:args RPAREN
+    {:
+        RESULT = new CallExp(a.getLine(), a.getPos(), a, i.getLexeme(), args);
+    :}//%prec DOT
+
     ;
 statement ::=
     LBRACE:l statement_list:a RBRACE {:RESULT = new BlockStatement(l.line,l.pos,a);:}
@@ -153,18 +191,79 @@ statement ::=
     {: RESULT = new IfStatement(op.line, op.pos, a, b, c);:}
     |WHILE:op LPAREN exp:a RPAREN statement:b
     {: RESULT = new WhileStatement(op.line, op.pos, a, b);:}
+    |exp:a DOT identifier:i LPAREN arguments:args RPAREN SEMI
+    {:
+        RESULT = new CallStatement(a.getLine(), a.getPos(), a, i.getLexeme(), args);
+    :}//%prec DOT
+    | MEGGYTONESTART:m LPAREN exp:a COMMA exp:b RPAREN SEMI
+    {: RESULT = new MeggyToneStart(m.line, m.pos, a, b); :}
     ;
 statement_list ::=
      statement_list:s1 statement:s2
      {: s1.add(s2); RESULT = s1;:}
     |{:RESULT = new LinkedList<IStatement>();:}
     ;
+identifier ::=
+    ID:id
+    {: RESULT = new IdLiteral(id.line, id.pos, id.lexeme);:}
+    ;
 
 block_statement ::=
     LBRACE:l statement_list:s1 RBRACE
       {:RESULT = new BlockStatement(l.line, l.pos, s1);:}
     ;
-
+formals ::=
+    formals:fo COMMA:c type:t identifier:i
+    {: Formal formal = new Formal(t.getLine(), t.getPos(), t, i.getLexeme());
+        fo.add(formal);
+        RESULT = fo;
+    :}
+    |type:t identifier:i
+    {:  Formal formal2 = new Formal(t.getLine(), t.getPos(), t, i.getLexeme());
+        LinkedList<Formal> fo = new LinkedList<Formal>();
+        fo.add(formal2);
+        RESULT = fo;
+    :}
+    | {:RESULT = new LinkedList<Formal>();:}
+    ;
+return ::=
+     RETURN exp:e SEMI {:RESULT = e;:}
+    |{:RESULT = null;:}
+    ;
+arguments ::=
+    arguments:a COMMA:c exp:e {:a.add(e); RESULT = a;:}
+    |exp:e
+    {:
+        LinkedList<IExp> l = new LinkedList<IExp>();
+        l.add(e);
+        RESULT = l;
+    :}
+    |   {:RESULT = new LinkedList<IExp>();:}
+    ;
+method_declaration ::=
+	PUBLIC:p type:t identifier:id LPAREN formals:form RPAREN LBRACE statement_list:sl return:r RBRACE
+	{:
+        RESULT = new MethodDecl(p.line, p.pos, t, id.getLexeme(), form , new LinkedList<VarDecl>(), sl, r);
+	:}
+    //|PUBLIC TYPE:t identifier:id LPAREN formals:form RPAREN LBRACE statement_list:sl RBRACE
+    //{:RESULT = new MethodDecl(t.getLine(), t.getPos(), t, id.lexeme, form , new LinkedList<VarDecl>(), sl, null);:}
+	;
+method_list ::=
+    method_list:s1 method_declaration:s2
+    {: s1.add(s2); RESULT = s1;:}
+    |{:RESULT = new LinkedList<MethodDecl>();:}
+    ;
+class_declaration ::=
+    CLASS:c identifier:i LBRACE method_list:m RBRACE
+    {:
+        RESULT = new TopClassDecl(c.line, c.pos, i.getLexeme(), new LinkedList<VarDecl>(), m);
+    :}
+    ;
+ class_list ::=
+    class_list:list class_declaration:c
+    {: list.add(c); RESULT = list; :}
+    |{: RESULT = new LinkedList<IClassDecl>(); :}
+    ;
 main_class ::=
         CLASS:op ID:name
             {: /*java.io.PrintStream sout
@@ -206,8 +305,7 @@ main_class ::=
                 e2.printStackTrace();
             }
             finally{
-                try{
-                    if(mainPrologue!=null) mainPrologue.close();
+                try{                    if(mainPrologue!=null) mainPrologue.close();
                     if(reader!=null) reader.close();
                 }
                 catch (IOException e) {

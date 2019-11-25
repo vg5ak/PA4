@@ -49,9 +49,11 @@ public class MJDriver {
           int lastInPath = filename.lastIndexOf('/');
           parser.programName = filename.substring(lastInPath+1);
           System.out.println("Driver finds input filename: " + parser.programName);
-          System.out.println("Hello");
+          //System.out.println("Hello");
+          //System.out.println("Hello");
           // and parse
-         Node ast_root = (Node)parser.parse().value;
+          Node ast_root = (Node)parser.parse().value;
+         //System.out.println("Hello");
          //System.out.println("Hello");
 
           // print ast to file
@@ -60,12 +62,12 @@ public class MJDriver {
                 new java.io.FileOutputStream(filename + ".ast.dot"));
           ast_root.accept(new DotVisitor(new PrintWriter(astout)));
           System.out.println("Printing AST to " + filename + ".ast.dot");
-          System.out.println("Hello");
+          // System.out.println("Hello");
 
-          CheckTypes stVisitor = new CheckTypes();
-          ast_root.accept(stVisitor);
-          symtable.SymTable globalST = stVisitor.getSymTable();
- /*
+          // CheckTypes stVisitor = new CheckTypes();
+          // ast_root.accept(stVisitor);
+          // symtable.SymTable globalST = stVisitor.getSymTable();
+
           // create the symbol table
           BuildSymTable stVisitor = new BuildSymTable();
           ast_root.accept(stVisitor);
@@ -79,7 +81,7 @@ public class MJDriver {
           //globalST.outputDot(STout);
 
           // perform type checking
- */
+
           ast_root.accept(new CheckTypes(globalST));
           /*
           // Determine whether to do register allocation or not.

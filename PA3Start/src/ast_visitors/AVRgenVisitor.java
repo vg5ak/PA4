@@ -24,12 +24,12 @@ outEqualExp
 outNegExp
 outByteCast
 */
+import java.lang.*;
 import ast.node.*;
 import ast.visitor.DepthFirstVisitor;
 import java.util.*;
 import ast.visitor.*;
-import symtable.SymTable;
-import symtable.Type;
+import symtable.*;
 import exceptions.InternalException;
 import exceptions.SemanticException;
 import java.io.*;
@@ -41,9 +41,11 @@ public class AVRgenVisitor extends DepthFirstVisitor
 
    private SymTable mCurrentST;
    private PrintWriter mPrintWriter;
+   private String mName;
    public AVRgenVisitor(PrintWriter pw, SymTable st) {
      mPrintWriter = pw;
      mCurrentST = st;
+     mName = "";
      //Label l = new Label();
    }
 
@@ -60,9 +62,200 @@ public class AVRgenVisitor extends DepthFirstVisitor
    EqualExp
    NotExp*/
    //======================== Overriding the Bool Exp Nodes
+
    @Override
     public void outBlockStatement(BlockStatement node)
     {
+
+    }
+    @Override
+    public void inNewExp(NewExp node){
+        mPrintWriter.println("ldi r24, lo8(0)");
+        mPrintWriter.println("ldi r25, hi8(0)");
+        mPrintWriter.println("call malloc");
+        mPrintWriter.println("push r25");
+        mPrintWriter.println("push r24");
+        this.mCurrentST.pushScope(node.getId());
+
+    }
+    @Override
+    public void visitThisLiteral(ThisLiteral node){
+        mPrintWriter.println("ldd r31, Y+2");
+        mPrintWriter.println("ldd r30, Y+1");
+        mPrintWriter.println("push r31");
+        mPrintWriter.println("push r30");
+        Scope first = this.mCurrentST.peek();
+        this.mCurrentST.popScope();
+        Scope second = this.mCurrentST.peek();
+        this.mCurrentST.addScope(first);
+        this.mCurrentST.addScope(second);
+
+    }
+    public static String intToString(int i){
+        return String.valueOf(i);
+    }
+
+    @Override
+    public void outIdLiteral(IdLiteral node){
+        // System.out.println("Idliteral");
+        //System.out.println("Name: "+ node.getLexeme());
+        //Scope s = this.mCurrentST.lookupClosestScope(node.getId());
+        //System.out.println("Names: " + s);
+        //Scope s = this.mCurrentST.lookupClosestScope(node.getLexeme());
+        //System.out.println("IdLiteral: " + s.mName);
+        VarSTE ste = (VarSTE)this.mCurrentST.lookup(node.getLexeme());
+        //System.out.println("NAMAMAMAMAMA: " + ste.getName());
+        //VarSTE ste = this.mCurrentST.idlit.get(node.getLexeme());
+        //System.out.println(ste.mType.toString());
+        if(ste == null){
+            // System.out.println("This is stupid");
+
+            System.exit(0);
+        }
+        if(ste.mType != Type.INT || ste.mType != Type.TONE){
+            mPrintWriter.println("ldd r24, Y + "+intToString(ste.mOffset));
+            mPrintWriter.println("push r24");
+        }
+        else {
+            mPrintWriter.println("ldd r25, Y + "+intToString(ste.mOffset+1));
+            mPrintWriter.println("ldd r24, Y + "+intToString(ste.mOffset));
+            mPrintWriter.println("push r25");
+            mPrintWriter.println("push r24");
+        }
+        // System.out.println("It did not exit");
+
+    }
+    @Override
+    public void outMeggyToneStart(MeggyToneStart node){
+        mPrintWriter.println("pop r22");
+        mPrintWriter.println("pop r23");
+        mPrintWriter.println("pop r24");
+        mPrintWriter.println("pop r25");
+        mPrintWriter.println("call _Z10Tone_Startjj");
+    }
+    @Override
+    public void outLtExp(LtExp node)
+    {
+        Type lexpType = this.mCurrentST.getExpType(node.getLExp());
+        Type rexpType = this.mCurrentST.getExpType(node.getRExp());
+        Label l0, l1, l2, l3, l4, l5, l6, l7;
+        l0 = new Label(); l1 = new Label();
+        l2 = new Label();l3 = new Label();
+        l4 = new Label();
+        l5 = new Label();
+        l6 = new Label();
+        l7 = new Label();
+        if(lexpType == Type.INT && rexpType == Type.INT){
+            // System.out.println("Goes in double ints");
+            mPrintWriter.println("pop    r18");
+            mPrintWriter.println("pop    r19");
+            //mPrintWriter.println(# load a two byte expression off stack);
+            mPrintWriter.println("pop    r24");
+            mPrintWriter.println("pop    r25");
+            mPrintWriter.println("cp    r24, r18");
+            mPrintWriter.println("cpc   r25, r19");
+            mPrintWriter.println("brlt "+l4);
+
+            //mPrintWriter.println(# load false);
+            mPrintWriter.println(l3+":");
+            mPrintWriter.println("ldi     r24, 0");
+            mPrintWriter.println("jmp      "+l5);
+
+            //mPrintWriter.println(# load true);
+            mPrintWriter.println(l4+":");
+            mPrintWriter.println("ldi    r24, 1");
+
+            //mPrintWriter.println(# push result of less than);
+            mPrintWriter.println(l5+":");
+            //mPrintWriter.println(# push one byte expression onto stack);
+            mPrintWriter.println("push   r24");
+        }
+        else if(lexpType == Type.BYTE && rexpType == Type.INT){
+            // System.out.println("Goes in byte and ints");
+            //mPrintWriter.println(# less than expression);
+            //mPrintWriter.println(# load a two byte expression off stack);
+            mPrintWriter.println("pop    r18");
+            mPrintWriter.println("pop    r19");
+            //mPrintWriter.println(# load a one byte expression off stack);
+            mPrintWriter.println("pop    r24");
+            //mPrintWriter.println(# promoting a byte to an int);
+            mPrintWriter.println("tst     r24");
+            mPrintWriter.println("brlt     " + l6);
+            mPrintWriter.println("ldi    r25, 0");
+            mPrintWriter.println("jmp    "+l7);
+            mPrintWriter.println(l6+":");
+            mPrintWriter.println("ldi    r25, hi8(-1)");
+            mPrintWriter.println(l7+":");
+            mPrintWriter.println("cp    r24, r18");
+            mPrintWriter.println("cpc   r25, r19");
+            mPrintWriter.println("brlt "+l4);
+
+            //mPrintWriter.println(# load false);
+            mPrintWriter.println(l3+":");
+            mPrintWriter.println("ldi     r24, 0");
+            mPrintWriter.println("jmp      "+l5);
+
+            //mPrintWriter.println(# load true);
+            mPrintWriter.println(l4+":");
+            mPrintWriter.println("ldi    r24, 1");
+
+            //mPrintWriter.println(# push result of less than);
+            mPrintWriter.println(l5+":");
+            //mPrintWriter.println(# push one byte expression onto stack);
+            mPrintWriter.println("push   r24");
+        }
+        else if(lexpType == Type.BYTE && rexpType == Type.BYTE){
+            mPrintWriter.println("pop    r18");
+            //# load a one byte expression off stack
+            mPrintWriter.println("pop    r24");
+            mPrintWriter.println("cp    r24, r18");
+            mPrintWriter.println("brlt "+l4);
+
+            //mPrintWriter.println(# load false
+            mPrintWriter.println(l3+":");
+            mPrintWriter.println("ldi     r24, 0");
+            mPrintWriter.println("jmp      "+l5);
+
+            //mPrintWriter.println(# load true
+            mPrintWriter.println(l4+":");
+            mPrintWriter.println("ldi    r24, 1");
+
+            //mPrintWriter.println(    # push result of less than
+            mPrintWriter.println(l5+":");
+            //# push one byte expression onto stack
+            mPrintWriter.println("push   r24");
+        }
+        else if(lexpType == Type.INT && rexpType == Type.BYTE){
+            mPrintWriter.println("pop    r18");
+            //mPrintWriter.println(# load a two byte expression off stack
+            mPrintWriter.println("pop    r24");
+            mPrintWriter.println("pop    r25");
+            //mPrintWriter.println(# promoting a byte to an int
+            mPrintWriter.println("tst     r18");
+            mPrintWriter.println("brlt     "+l6);
+            mPrintWriter.println("ldi    r19, 0");
+            mPrintWriter.println("jmp  "+  l7);
+            mPrintWriter.println(l6+":");
+            mPrintWriter.println("ldi    r19, hi8(-1)");
+            mPrintWriter.println(l7+":");
+            mPrintWriter.println("cp    r24, r18");
+            mPrintWriter.println("cpc   r25, r19");
+            mPrintWriter.println("brlt " +l4);
+
+            //mPrintWriter.println(# load false
+            mPrintWriter.println(l3+":");
+            mPrintWriter.println("ldi     r24, 0");
+            mPrintWriter.println("jmp   "+   l5);
+
+            //mPrintWriter.println(# load true
+            mPrintWriter.println(l4+":");
+            mPrintWriter.println("ldi    r24, 1");
+
+            //mPrintWriter.println(# push result of less than
+            mPrintWriter.println(l5+":");
+            //mPrintWriter.println(# push one byte expression onto stack
+            mPrintWriter.println("push   r24");
+        }
 
     }
    @Override
@@ -113,6 +306,14 @@ public class AVRgenVisitor extends DepthFirstVisitor
    public void outAndExp(AndExp node){
 
    }
+   @Override
+   public void inToneExp(ToneLiteral node){
+
+       mPrintWriter.println("ldi r25, hi8("+node.getIntValue()+")");
+       mPrintWriter.println("ldi r24, lo8("+node.getIntValue()+")");
+       mPrintWriter.println("push r25");
+       mPrintWriter.println("push r24");
+   }
 
    //==========================Overriding the Integer and Byte Exp Nodes
    @Override
@@ -132,14 +333,12 @@ public class AVRgenVisitor extends DepthFirstVisitor
            //# push two byte expression onto stack
            mPrintWriter.println("push   r25");
            mPrintWriter.println("push   r24");
-
            //# Load constant int 0
            mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
            mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
            //# push two byte expression onto stack
            mPrintWriter.println("push   r25");
            mPrintWriter.println("push   r24");
-
            //# Casting int to byte by popping
            //# 2 bytes off stack and only pushing low order bits
            //# back on.  Low order bits are on top of stack.
@@ -173,20 +372,17 @@ public class AVRgenVisitor extends DepthFirstVisitor
            //# push two byte expression onto stack
            mPrintWriter.println("push   r25");
            mPrintWriter.println("push   r24");
-
            //# Casting int to byte by popping
            //# 2 bytes off stack and only pushing low order bits
            //# back on.  Low order bits are on top of stack.
            mPrintWriter.println("pop    r24");
            mPrintWriter.println("pop    r25");
            mPrintWriter.println("push   r24");
-
            mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
            mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
            //# push two byte expression onto stack
            mPrintWriter.println("push   r25");
            mPrintWriter.println("push   r24");
-
            //# Casting int to byte by popping
            //# 2 bytes off stack and only pushing low order bits
            //# back on.  Low order bits are on top of stack.
@@ -227,14 +423,12 @@ public class AVRgenVisitor extends DepthFirstVisitor
            //mPrintWriter.println(# push two byte expression onto stack);
            mPrintWriter.println("push   r25");
            mPrintWriter.println("push   r24");
-
            //mPrintWriter.println(# Casting int to byte by popping);
            //mPrintWriter.println(# 2 bytes off stack and only pushing low order bits);
            //mPrintWriter.println(# back on.  Low order bits are on top of stack.);
            mPrintWriter.println("pop    r24");
            mPrintWriter.println("pop    r25");
            mPrintWriter.println("push   r24");
-
            //mPrintWriter.println(# Load constant int 0);
            mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
            mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
@@ -292,14 +486,12 @@ public class AVRgenVisitor extends DepthFirstVisitor
                //# push two byte expression onto stack
                mPrintWriter.println("push   r25");
                mPrintWriter.println("push   r24");
-
                //# Load constant int 0
                mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
                mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
                //# push two byte expression onto stack
                mPrintWriter.println("push   r25");
                mPrintWriter.println("push   r24");
-
                //# Casting int to byte by popping
                //# 2 bytes off stack and only pushing low order bits
                //# back on.  Low order bits are on top of stack.
@@ -333,20 +525,17 @@ public class AVRgenVisitor extends DepthFirstVisitor
                //# push two byte expression onto stack
                mPrintWriter.println("push   r25");
                mPrintWriter.println("push   r24");
-
                //# Casting int to byte by popping
                //# 2 bytes off stack and only pushing low order bits
                //# back on.  Low order bits are on top of stack.
                mPrintWriter.println("pop    r24");
                mPrintWriter.println("pop    r25");
                mPrintWriter.println("push   r24");
-
                mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
                mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
                //# push two byte expression onto stack
                mPrintWriter.println("push   r25");
                mPrintWriter.println("push   r24");
-
                //# Casting int to byte by popping
                //# 2 bytes off stack and only pushing low order bits
                //# back on.  Low order bits are on top of stack.
@@ -387,14 +576,12 @@ public class AVRgenVisitor extends DepthFirstVisitor
                //mPrintWriter.println(# push two byte expression onto stack);
                mPrintWriter.println("push   r25");
                mPrintWriter.println("push   r24");
-
                //mPrintWriter.println(# Casting int to byte by popping);
                //mPrintWriter.println(# 2 bytes off stack and only pushing low order bits);
                //mPrintWriter.println(# back on.  Low order bits are on top of stack.);
                mPrintWriter.println("pop    r24");
                mPrintWriter.println("pop    r25");
                mPrintWriter.println("push   r24");
-
                //mPrintWriter.println(# Load constant int 0);
                mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
                mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
@@ -445,16 +632,13 @@ public class AVRgenVisitor extends DepthFirstVisitor
        mPrintWriter.println("ldi    r25,hi8("+node.getLExp().value+")");
        mPrintWriter.println("push   r25");
        mPrintWriter.println("push   r24");
-
        mPrintWriter.println("pop    r24");
        mPrintWriter.println("pop    r25");
        mPrintWriter.println("push   r24");
-
        mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
        mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
        mPrintWriter.println("push   r25");
        mPrintWriter.println("push   r24");
-
        mPrintWriter.println("pop    r24");
        mPrintWriter.println("pop    r25");
        mPrintWriter.println("push   r24");*/
@@ -493,7 +677,6 @@ public class AVRgenVisitor extends DepthFirstVisitor
        //# push two byte expression onto stack
        mPrintWriter.println("push   r25");
        mPrintWriter.println("push   r24");
-
        //# equality check expression
        //# load a two byte expression off stack
        if(lexpType == Type.BOOL){
@@ -513,18 +696,14 @@ public class AVRgenVisitor extends DepthFirstVisitor
        }
        mPrintWriter.println("cp    r24, r18");
        mPrintWriter.println("cpc   r25, r19");
-
        mPrintWriter.println("breq "+l4);
-
        //mPrintWriter.println(# result is false
        mPrintWriter.println(l3 + ":");
        mPrintWriter.println("ldi     r24, 0");
        mPrintWriter.println("jmp      "+l5);
-
        //mPrintWriter.println(# result is true
        mPrintWriter.println(l4 +":");
        mPrintWriter.println("ldi     r24, 1");
-
        //mPrintWriter.println(# store result of equal expression
        mPrintWriter.println( l5 + ":");
       //mPrintWriter.println( # push one byte expression onto stack
@@ -666,6 +845,7 @@ public class AVRgenVisitor extends DepthFirstVisitor
 
 
        }
+
    @Override
    public void outNegExp(NegExp node){
        /*mPrintWriter.println("ldi    r24,lo8("+node.getExp().value+")");
@@ -767,45 +947,45 @@ public class AVRgenVisitor extends DepthFirstVisitor
     MeggySetPixel
     WhileStatement*/
     @Override
-    public void visitIfStatement(IfStatement node){
-        mPrintWriter.println("#IFStatement");
-        Label l0 = new Label();
-        Label l1 = new Label();
-        Label l2 = new Label();
-        //mPrintWriter.println(l1 + ":");
-        inIfStatement(node);
-        if(node.getExp() != null)
-        {
-            node.getExp().accept(this);
-        }
-        mPrintWriter.println("pop    r24");
-        //#load zero into reg
-        mPrintWriter.println("ldi    r25, 0");
+   public void visitIfStatement(IfStatement node){
+       mPrintWriter.println("#IFStatement");
+       Label l0 = new Label();
+       Label l1 = new Label();
+       Label l2 = new Label();
+       //mPrintWriter.println(l1 + ":");
+       inIfStatement(node);
+       if(node.getExp() != null)
+       {
+           node.getExp().accept(this);
+       }
+       mPrintWriter.println("pop    r24");
+       //#load zero into reg
+       mPrintWriter.println("ldi    r25, 0");
 
-        //#use cp to set SREG
-        mPrintWriter.println("cp     r24, r25");
-        //#WANT breq MJ_L0
-        mPrintWriter.println("brne " +   l1);
-        mPrintWriter.println("jmp " +  l0);
+       //#use cp to set SREG
+       mPrintWriter.println("cp     r24, r25");
+       //#WANT breq MJ_L0
+       mPrintWriter.println("brne " +   l1);
+       mPrintWriter.println("jmp " +  l0);
 
-        //# then label for if
-        mPrintWriter.println(l1 + ":");
-        if(node.getThenStatement() != null)
-        {
-            node.getThenStatement().accept(this);
-        }
-        mPrintWriter.println("jmp " + l2);
+       //# then label for if
+       mPrintWriter.println(l1 + ":");
+       if(node.getThenStatement() != null)
+       {
+           node.getThenStatement().accept(this);
+       }
+       mPrintWriter.println("jmp " + l2);
 
-        //# else label for if
-        mPrintWriter.println(l0 + ":");
-        if(node.getElseStatement() != null)
-        {
-            node.getElseStatement().accept(this);
-        }
-        mPrintWriter.println(l2 + ":");
+       //# else label for if
+       mPrintWriter.println(l0 + ":");
+       if(node.getElseStatement() != null)
+       {
+           node.getElseStatement().accept(this);
+       }
+       mPrintWriter.println(l2 + ":");
 
-        outIfStatement(node);
-    }
+       outIfStatement(node);
+   }
     @Override
     public void visitWhileStatement(WhileStatement node){
         mPrintWriter.println("#While");
@@ -839,9 +1019,258 @@ public class AVRgenVisitor extends DepthFirstVisitor
 
         //
     }
+    public static String makeString(int i){
+        return String.valueOf(i);
+    }
+    @Override
+    public void inMethodDecl(MethodDecl node){
+        // System.out.println("Going into MethodDecl");
+        MethodSTE newSTE = new MethodSTE(node);
+        mCurrentST.pushScope(newSTE.getName());
+        //System.out.println(newSTE.getName());
+        String mName = node.callSign();
+
+        mPrintWriter.println("   .text");
+        mPrintWriter.println(".global "+mName);
+        mPrintWriter.println(".type "+mName+", @function");
+        mPrintWriter.println(mName+":");
+        mPrintWriter.println("push r29");
+        mPrintWriter.println("push r28");
+        mPrintWriter.println("ldi r30, 0");
+
+
+        LinkedList<Formal> list = newSTE.mSignature;
+        mPrintWriter.println("push r30");
+        mPrintWriter.println("push r30");
+
+        for(int i = 0; i < list.size(); i++){
+            if(this.mCurrentST.getExpType(list.get(i)).getAVRTypeSize() == 2){
+                mPrintWriter.println("push r30");
+                mPrintWriter.println("push r30");
+            }
+            else if(this.mCurrentST.getExpType(list.get(i)).getAVRTypeSize() == 1){
+                mPrintWriter.println("push r30");
+            }
+        }
+        // System.out.println("allocate space");
+        mPrintWriter.println("in r28, __SP_L__");
+        mPrintWriter.println("in r29, __SP_H__");
+        mPrintWriter.println("std Y + 2, r25");
+        mPrintWriter.println("std Y + 1, r24");
+        int register = 24;
+
+        for(Iterator<Formal> iter = newSTE.mSignature.iterator(); iter.hasNext();){
+            //VarSTE ste = (VarSTE)iter.getValue();
+            VarSTE ste = new VarSTE(iter.next(), 0);
+            if(ste.getType() == Type.INT){
+                if(register == 24){
+                    mPrintWriter.println("std Y + " + makeString(24-register+2+3) + ", r" + makeString(register-1));
+                    mPrintWriter.println("std Y + " + makeString(24-register+1+2) + ", r" + makeString(register-2));
+                }else{
+                    mPrintWriter.println("std Y + " + makeString(24-register+2+2) + ", r" + makeString(register-1));
+                    mPrintWriter.println("std Y + " + makeString(24-register+1+1) + ", r" + makeString(register-2));
+                }
+            }
+            else{
+                if(register == 24){
+                    mPrintWriter.println("std Y + " + makeString(24-register+1+2) + ", r" + makeString(register-2));
+                }else{
+                    mPrintWriter.println("std Y + " + makeString(24-register+1+1) + ", r" + makeString(register-2));
+                }
+
+            }
+            register -=2;
+        }
+        // System.out.println("Go past here");
+    }
+    @Override
+    public void outVoidType(VoidType node){
+        // System.out.println("go into void");
+    }
+    @Override
+    public void outIntType(IntType node){
+        // System.out.println("go into int");
+    }
+    @Override
+    public void outByteType(ByteType node){
+        // System.out.println("go into byte");
+    }
+    @Override
+    public void outColorType(ColorType node){
+        // System.out.println("go into color");
+    }
+    @Override
+    public void outToneType(ToneType node){
+        // System.out.println("go into tone");
+    }
+    @Override
+    public void outButtonType(ButtonType node){
+        // System.out.println("go into button");
+    }
+    @Override
+    public void outMethodDecl(MethodDecl node){
+        // System.out.println("Entering the End of MethodDecl");
+        this.mName = node.callSign();
+
+        MethodSTE newSTE = new MethodSTE(node);
+        LinkedList<Formal> list = newSTE.mSignature;
+        Label l0 = new Label();
+        Label l1 = new Label();
+        // if(newSTE.mType == Type.INT && this.mCurrentST.getExpType(node.getExp())==Type.BYTE){
+        // mPrintWriter.println("pop    r24");
+        // //mPrintWriter.println(# promoting a byte to an int);
+        // mPrintWriter.println("tst     r24");
+        // mPrintWriter.println("brlt     " + l0);
+        // mPrintWriter.println("ldi    r25, 0");
+        // mPrintWriter.println("jmp    "+l1);
+        // mPrintWriter.println(l0+":");
+        // mPrintWriter.println("ldi    r25, hi8(-1)");
+        // mPrintWriter.println(l1+":");
+        // }
+        // else if(newSTE.mType == Type.INT){
+        //     mPrintWriter.println("pop r25");
+        //     mPrintWriter.println("pop r24");
+        // }
+        // else{
+        //     mPrintWriter.println("pop r24");
+        // }
+        mPrintWriter.println("pop r30");
+        mPrintWriter.println("pop r30");
+        for(int i = 0; i < list.size(); i++){
+            if(this.mCurrentST.getExpType(list.get(i)).getAVRTypeSize() == 2){
+                mPrintWriter.println("pop r30");
+                mPrintWriter.println("pop r30");
+            }
+            else if(this.mCurrentST.getExpType(list.get(i)).getAVRTypeSize() == 1){
+                mPrintWriter.println("pop r30");
+            }
+        }
+        mPrintWriter.println("pop r28");
+        mPrintWriter.println("pop r29");
+        mPrintWriter.println("ret");
+        mPrintWriter.println(".size "+mName+ ", .-"+mName);
+
+    }
+    public int reg(int i){
+        return 24 - 2*i;
+    }
+    @Override
+    public void outCallExp(CallExp node){
+        // System.out.println("Enter Call Exp");
+        LinkedList<IExp> args = node.getArgs();
+        LinkedList<STE> formals = new LinkedList<STE>();
+        Scope s = this.mCurrentST.lookupClosestScope(node.getId());
+        formals.addAll(s.mHashMap.values());
+        int current = 0;
+
+        for(int i = formals.size(); i>0; i--){
+            // System.out.println("HHHHallting");
+            VarSTE ste = (VarSTE)formals.get(i);
+            current = reg(i);
+            if(ste.getType() == Type.BYTE){
+                mPrintWriter.println("pop r" + current);
+            }
+            else if(this.mCurrentST.getExpType(args.get(i)) == Type.INT){
+                Label l0 = new Label();
+                Label l1 = new Label();
+                mPrintWriter.println("pop    r"+current);
+                //mPrintWriter.println(# promoting a byte to an int);
+                mPrintWriter.println("tst     r"+current);
+                mPrintWriter.println("brlt     " + l0);
+                mPrintWriter.println("ldi    r"+current+", 0");
+                mPrintWriter.println("jmp    "+l1);
+                mPrintWriter.println(l0+":");
+                mPrintWriter.println("ldi    r"+current+", hi8(-1)");
+                mPrintWriter.println(l1+":");
+                mPrintWriter.println("pop r"+current);
+                mPrintWriter.println("pop r"+current+1);
+            }
+                mPrintWriter.println("#notdoingexp");
+            current=current-2;
+        }
+        mPrintWriter.println("pop r24");
+        mPrintWriter.println("pop r25");
+        mPrintWriter.println("call "+this.mCurrentST.peek().mName+"_"+node.getId());
+        MethodSTE x = (MethodSTE)this.mCurrentST.lookup(node.getId());
+        // System.out.println(x.getName());
+        if(this.mCurrentST.lookup(node.getId()).mType.getAVRTypeSize() == 2){
+            mPrintWriter.println("push r24");
+            mPrintWriter.println("push r25");
+        }
+        else{
+            mPrintWriter.println("push r24");
+        }
+        //mCurrentST.popScope();
+
+    }
+
+    @Override
+    public void outCallStatement(CallStatement node){
+        Scope second = this.mCurrentST.peek();
+        String name = second.mName;
+        LinkedList<IExp> args = node.getArgs();
+        LinkedList<STE> formals = new LinkedList<STE>();
+        Scope s = this.mCurrentST.lookupClosestScope(node.getId());
+        formals.addAll(s.mHashMap.values());
+        int current = 0;
+        // System.out.println("Begin For Loop");
+        // System.out.println("Args size: "+args.size());
+        VarSTE ste;
+        for(int i = 0; i < args.size(); i++){
+            // System.out.println(this.mCurrentST.getExpType(args.get(i)));
+            ste = (VarSTE)formals.get(i+1);
+            // System.out.println(ste.mType.toString());
+        }
+        // System.out.println("Formal size: "+formals.size());
+        for(int i = formals.size()-1; i>=1; i--){
+            ste = (VarSTE)formals.get(i);
+            current = reg(i);
+            if(ste.getType() == Type.BYTE){
+                mPrintWriter.println("pop r" + current);
+            }
+            else if(this.mCurrentST.getExpType(args.get(i-1)) == Type.INT){
+                Label l0 = new Label();
+                Label l1 = new Label();
+                mPrintWriter.println("pop    r"+current);
+                //mPrintWriter.println(# promoting a byte to an int);
+                mPrintWriter.println("tst     r"+current);
+                mPrintWriter.println("brlt     " + l0);
+                mPrintWriter.println("ldi    r"+current+", 0");
+                mPrintWriter.println("jmp    "+l1);
+                mPrintWriter.println(l0+":");
+                mPrintWriter.println("ldi    r"+current+", hi8(-1)");
+                mPrintWriter.println(l1+":");
+                mPrintWriter.println("pop r"+current);
+                mPrintWriter.println("pop r"+current+1);
+            }
+            mPrintWriter.println("#notdoingexp");
+            current=current-2;
+        }
+        mPrintWriter.println("pop r24");
+        mPrintWriter.println("pop r25");
+        //System.out.println("AHHHHHHHHHHH"+ node.getId());
+        //Scope s =
+        Scope y = this.mCurrentST.lookupClosestScope("TopClassDecl");
+        mPrintWriter.println("call "+y.mName+"_"+node.getId());
+        MethodSTE x = (MethodSTE)this.mCurrentST.lookup(node.getId());
+        //System.out.println("Name of Class: " + y.mName);
+        //System.out.println("AHHHHHHHH: "+ x.getName());
+        // if(x.mType.getAVRTypeSize() == 2){
+        //     mPrintWriter.println("push r24");
+        //     mPrintWriter.println("push r25");
+        // }
+        // else{
+        //     mPrintWriter.println("push r24");
+        // }
+        //mCurrentST.popScope();
+        // System.out.println("End Call Statement");
+    }
+
     @Override
     public void outMeggySetPixel(MeggySetPixel node)
     {
+        // System.out.println("Enter SetPixel");
+        // System.out.println(node.getColor());
         mPrintWriter.println("pop r20");
         mPrintWriter.println("pop r22");
         mPrintWriter.println("pop r24");
@@ -867,35 +1296,7 @@ public class AVRgenVisitor extends DepthFirstVisitor
     //@Override
     public void outMeggyGetPixel(MeggyGetPixel node){
         mPrintWriter.println("#MeggyGetPixel");
-        /*mPrintWriter.println("ldi    r24,lo8("+node.getLExp().value+")");
-        mPrintWriter.println("ldi    r25,hi8("+node.getLExp().value+")");
-        //# push two byte expression onto stack
-        mPrintWriter.println("push   r25");
-        mPrintWriter.println("push   r24");*/
 
-        //# Casting int to byte by popping
-        //# 2 bytes off stack and only pushing low order bits
-        //# back on.  Low order bits are on top of stack.
-        /*mPrintWriter.println("pop    r24");
-        mPrintWriter.println("pop    r25");
-        mPrintWriter.println("push   r24");*/
-
-        //# Load constant int 0
-        /*mPrintWriter.println("ldi    r24,lo8("+node.getRExp().value+")");
-        mPrintWriter.println("ldi    r25,hi8("+node.getRExp().value+")");
-        //# push two byte expression onto stack
-        mPrintWriter.println("push   r25");
-        mPrintWriter.println("push   r24");*/
-
-        //# Casting int to byte by popping
-        //# 2 bytes off stack and only pushing low order bits
-        //# back on.  Low order bits are on top of stack.
-        /*mPrintWriter.println("pop    r24");
-        mPrintWriter.println("pop    r25");
-        mPrintWriter.println("push   r24");*/
-
-        //### Meggy.getPixel(x,y) call
-        //# load a one byte expression off stack
         mPrintWriter.println("pop    r22");
         //# load a one byte expression off stack
         mPrintWriter.println("pop    r24");
@@ -903,11 +1304,13 @@ public class AVRgenVisitor extends DepthFirstVisitor
         //# push one byte expression onto stack
         mPrintWriter.println("push   r24");
     }
+
     @Override
     public void inMeggyCheckButton(MeggyCheckButton node){
         //mPrintWriter.println(call _)
         mPrintWriter.println("call    _Z16CheckButtonsDownv");
     }
+
     @Override
     public void outMeggyCheckButton(MeggyCheckButton node)
     {
@@ -959,41 +1362,56 @@ public class AVRgenVisitor extends DepthFirstVisitor
             }
         }
     }
-    public void inMainClass(Program node){
+    public void inTopClassDecl(TopClassDecl node){
+        ClassSTE thi = new ClassSTE(node);
+        this.mName = thi.getName();
+        // System.out.println(node.getName());
+        mCurrentST.pushScope(node.getName());
 
+    }
+    public void outTopClassDecl(TopClassDecl node){
+        //mCurrentST.popScope();
+    }
+    public void inMainClass(MainClass node){
+        //ClassSTE thi = new ClassSTE(node);
+        //this.mName = thi.mName;
+
+        mCurrentST.pushScope(node.getName());
     }
     public void outProgram(Program node)
     {
-
+        System.out.print("flush");
+      mPrintWriter.flush();
     }
     public void outMainClass(MainClass node)
     {
-        System.out.println("Generate epilog using avrF.rtl.s");
-    InputStream mainEpilogue=null;BufferedReader reader2=null;
-    try {
-    mainEpilogue
-        = this.getClass().getClassLoader().getResourceAsStream(
-            "avrF.rtl.s");
-    reader2 = new BufferedReader(new
-        InputStreamReader(mainEpilogue));
 
-    String line = null;
-    while ((line = reader2.readLine()) != null) {
-      mPrintWriter.println(line);
-    }
-    } catch ( Exception e2) {
-    e2.printStackTrace();
-    }
-    finally{
-    try{
-        if(mainEpilogue!=null) mainEpilogue.close();
-        if(reader2!=null) reader2.close();
-    }
-    catch (IOException e) {
-       e.printStackTrace();
-    }
-    }
-      mPrintWriter.flush();
+            System.out.println("Generate epilog using avrF.rtl.s");
+        InputStream mainEpilogue=null;BufferedReader reader2=null;
+        try {
+        mainEpilogue
+            = this.getClass().getClassLoader().getResourceAsStream(
+                "avrF.rtl.s");
+        reader2 = new BufferedReader(new
+            InputStreamReader(mainEpilogue));
+
+        String line = null;
+        while ((line = reader2.readLine()) != null) {
+          mPrintWriter.println(line);
+        }
+        } catch ( Exception e2) {
+        e2.printStackTrace();
+        }
+        finally{
+        try{
+            if(mainEpilogue!=null) mainEpilogue.close();
+            if(reader2!=null) reader2.close();
+        }
+        catch (IOException e) {
+           e.printStackTrace();
+        }
+        }
+        //mCurrentST.popScope();
     }
 
 

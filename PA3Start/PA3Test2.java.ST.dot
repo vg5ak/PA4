@@ -1,0 +1,12 @@
+digraph ASTGraph {
+	node [shape=record];
+	graph [ rankdir="LR"];
+	scopePA3Test2 [ label="<f0> Scope PA3Test2 "];
+	
+	scopeProgram [ label="<f0> Scope Program | <f1> mDict\[PA3Test2\] "];
+	scopeProgram:<f1> -> PA3Test2:<f0>;
+
+	PA3Test2 [ label=" <f0> ClassSTE | <f1> mName=PA3Test2| <f2> mMain=true| <f3> mSuperClass = NULL | <f4> mScope "];
+	
+	PA3Test2:<f4>  -> scopePA3Test2: <f0>;
+}

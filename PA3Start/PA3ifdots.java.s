@@ -19,27 +19,32 @@ main:
     /* Need to call this so that the meggy library gets set up */
     
 #Integer
-ldi    r24,lo8(1)
-ldi    r25,hi8(1)
-push   r25
-push   r24
-#Integer
-ldi    r24,lo8(1)
-ldi    r25,hi8(1)
-push   r25
-push   r24
-pop    r18
-pop    r19
-pop    r24
-pop    r25
-sub    r24, r18
-sbc    r25, r19
+ldi    r24,lo8(0)
+ldi    r25,hi8(0)
 push   r25
 push   r24
 #ByteCast
 pop    r24
 pop    r25
 push   r24
+#Integer
+ldi    r24,lo8(0)
+ldi    r25,hi8(0)
+push   r25
+push   r24
+#ByteCast
+pop    r24
+pop    r25
+push   r24
+pop    r18
+pop    r22
+mov    r24, r18
+mov    r26, r22
+muls   r24, r26
+push   r1
+push   r0
+eor    r0,r0
+eor    r1,r1
 #ByteCast
 pop    r24
 push   r24

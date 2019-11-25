@@ -1,0 +1,145 @@
+digraph ASTGraph {
+0 [ label="Program" ];
+1 [ label="MainClass" ];
+0 -> 1
+2 [ label="BlockStatement" ];
+1 -> 2
+3 [ label="CallStatement" ];
+2 -> 3
+4 [ label="NewExp" ];
+3 -> 4
+5 [ label="ByteCast" ];
+3 -> 5
+6 [ label="IntLiteral\n3" ];
+5 -> 6
+7 [ label="ByteCast" ];
+3 -> 7
+8 [ label="IntLiteral\n7" ];
+7 -> 8
+9 [ label="IfStatement" ];
+2 -> 9
+10 [ label="LtExp" ];
+9 -> 10
+11 [ label="IntLiteral\n1" ];
+10 -> 11
+12 [ label="IntLiteral\n2" ];
+10 -> 12
+13 [ label="BlockStatement" ];
+9 -> 13
+14 [ label="MeggyToneStart" ];
+13 -> 14
+15 [ label="ToneLiteral\nMeggy.Tone.C3" ];
+14 -> 15
+16 [ label="IntLiteral\n2" ];
+14 -> 16
+17 [ label="IfStatement" ];
+2 -> 17
+18 [ label="LtExp" ];
+17 -> 18
+19 [ label="IntLiteral\n2" ];
+18 -> 19
+20 [ label="IntLiteral\n1" ];
+18 -> 20
+21 [ label="BlockStatement" ];
+17 -> 21
+22 [ label="MeggySetPixel" ];
+21 -> 22
+23 [ label="ByteCast" ];
+22 -> 23
+24 [ label="IntLiteral\n1" ];
+23 -> 24
+25 [ label="ByteCast" ];
+22 -> 25
+26 [ label="IntLiteral\n2" ];
+25 -> 26
+27 [ label="ColorLiteral\nMeggy.Color.RED" ];
+22 -> 27
+28 [ label="MeggyToneStart" ];
+21 -> 28
+29 [ label="ToneLiteral\nMeggy.Tone.Cs3" ];
+28 -> 29
+30 [ label="IntLiteral\n2" ];
+28 -> 30
+31 [ label="MeggyToneStart" ];
+21 -> 31
+32 [ label="ToneLiteral\nMeggy.Tone.D3" ];
+31 -> 32
+33 [ label="IntLiteral\n2" ];
+31 -> 33
+34 [ label="MeggyToneStart" ];
+21 -> 34
+35 [ label="ToneLiteral\nMeggy.Tone.E3" ];
+34 -> 35
+36 [ label="IntLiteral\n2" ];
+34 -> 36
+37 [ label="MeggyToneStart" ];
+2 -> 37
+38 [ label="ToneLiteral\nMeggy.Tone.B3" ];
+37 -> 38
+39 [ label="IntLiteral\n2" ];
+37 -> 39
+40 [ label="MeggyToneStart" ];
+2 -> 40
+41 [ label="ToneLiteral\nMeggy.Tone.C3" ];
+40 -> 41
+42 [ label="IntLiteral\n2" ];
+40 -> 42
+43 [ label="MeggyToneStart" ];
+2 -> 43
+44 [ label="ToneLiteral\nMeggy.Tone.B3" ];
+43 -> 44
+45 [ label="IntLiteral\n2" ];
+43 -> 45
+46 [ label="MeggyToneStart" ];
+2 -> 46
+47 [ label="ToneLiteral\nMeggy.Tone.C3" ];
+46 -> 47
+48 [ label="IntLiteral\n2" ];
+46 -> 48
+49 [ label="MeggySetPixel" ];
+2 -> 49
+50 [ label="ByteCast" ];
+49 -> 50
+51 [ label="IntLiteral\n1" ];
+50 -> 51
+52 [ label="ByteCast" ];
+49 -> 52
+53 [ label="IntLiteral\n2" ];
+52 -> 53
+54 [ label="ColorLiteral\nMeggy.Color.WHITE" ];
+49 -> 54
+55 [ label="MeggyToneStart" ];
+2 -> 55
+56 [ label="ToneLiteral\nMeggy.Tone.B3" ];
+55 -> 56
+57 [ label="IntLiteral\n2" ];
+55 -> 57
+58 [ label="MeggyToneStart" ];
+2 -> 58
+59 [ label="ToneLiteral\nMeggy.Tone.C3" ];
+58 -> 59
+60 [ label="IntLiteral\n2" ];
+58 -> 60
+61 [ label="TopClassDecl" ];
+0 -> 61
+62 [ label="MethodDecl" ];
+61 -> 62
+63 [ label="VoidType" ];
+62 -> 63
+64 [ label="Formal" ];
+62 -> 64
+65 [ label="ByteType" ];
+64 -> 65
+66 [ label="Formal" ];
+62 -> 66
+67 [ label="ByteType" ];
+66 -> 67
+68 [ label="MeggySetPixel" ];
+62 -> 68
+69 [ label="IdLiteral\nx" ];
+68 -> 69
+70 [ label="IdLiteral\ny" ];
+68 -> 70
+71 [ label="ColorLiteral\nMeggy.Color.RED" ];
+68 -> 71
+}

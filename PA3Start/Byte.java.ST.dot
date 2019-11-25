@@ -1,0 +1,12 @@
+digraph ASTGraph {
+	node [shape=record];
+	graph [ rankdir="LR"];
+	scopeByte [ label="<f0> Scope Byte "];
+	
+	scopeProgram [ label="<f0> Scope Program | <f1> mDict\[Byte\] "];
+	scopeProgram:<f1> -> Byte:<f0>;
+
+	Byte [ label=" <f0> ClassSTE | <f1> mName=Byte| <f2> mMain=true| <f3> mSuperClass = NULL | <f4> mScope "];
+	
+	Byte:<f4>  -> scopeByte: <f0>;
+}
